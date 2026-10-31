@@ -13,6 +13,7 @@ from datetime import datetime, time, timezone
 from email.utils import format_datetime
 from html import escape
 from pathlib import Path
+from zipfile import ZipFile
 from urllib.parse import quote
 from zoneinfo import ZoneInfo
 
@@ -184,9 +185,41 @@ PHOTO_DESCRIPTIONS = [
 ]
 
 
+def prepare_gallery():
+    """Read a voluntarily uploaded family-gallery.zip and publish the eight approved JPGs.
+
+    The zip stays public in GitHub. Never read arbitrary names or filesystem paths
+    from it; filenames are fixed, and all source photos were stripped of EXIF.
+    """
+    archive = ROOT / "family-gallery.zip"
+    destination = SITE / "photos"
+    if destination.exists():
+        shutil.rmtree(destination)
+    if not archive.is_file():
+        # No photos yet; leave site functional without broken images.
+        print("Family gallery archive not uploaded yet; skipping gallery.")
+        return
+    with ZipFile(archive, "r") as bundle:
+        expected = [f"photos/moment-{i:02d}.jpg" for i in range(1, 9)]
+        names = {info.filename: info for info in bundle.infolist()}
+        missing = [name for name in expected if name not in names]
+        if missing:
+            raise ValueError("Gallery archive is incomplete: " + ", ".join(missing))
+        destination.mkdir(parents=True)
+        for name in expected:
+            info = names[name]
+            if info.file_size > 2_000_000:
+                raise ValueError("Gallery image exceeds 2 MB: " + name)
+            photo = bundle.read(info)
+            if len(photo) != info.file_size or not photo.startswith(b"\\xff\\xd8\\xff"):
+                raise ValueError("Invalid JPEG inside gallery archive: " + name)
+            (destination / Path(name).name).write_bytes(photo)
+    print("Published eight approved gallery photographs.")
+
+
 def photo_gallery():
     """Show all available photos, without broken links before upload."""
-    source = ROOT / "photos"
+    source = SITE / "photos"
     cards = []
     for number, description in enumerate(PHOTO_DESCRIPTIONS, 1):
         filename = f"moment-{number:02d}.jpg"
@@ -285,18 +318,7 @@ def main():
         feed(items)
     else:
         (SITE / "feed.xml").unlink(missing_ok=True)
-    # Copy only expressly uploaded public gallery photos; no user data discovery.
-    gallery_source = ROOT / "photos"
-    gallery_target = SITE / "photos"
-    if gallery_target.exists():
-        shutil.rmtree(gallery_target)
-    if gallery_source.is_dir():
-        allowed = sorted(gallery_source.glob("moment-??.jpg"))
-        if allowed:
-            gallery_target.mkdir()
-            for photo in allowed:
-                if photo.name in {f"moment-{n:02d}.jpg" for n in range(1, 9)}:
-                    shutil.copy2(photo, gallery_target / photo.name)
+    prepare_gallery()
     index(items)
     print(f'Site generated: {len(items)} approved episodes; feed exists: {(SITE / "feed.xml").exists()}')
 
