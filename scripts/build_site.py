@@ -226,8 +226,9 @@ def photo_gallery():
         if not (source / filename).is_file():
             continue
         prominent = ' featured' if number == 1 else ''
+        centered = ' centered' if number == 8 else ''
         cards.append(
-            '<a class="memory' + prominent + '" href="photos/' + filename
+            '<a class="memory' + prominent + centered + '" href="photos/' + filename
             + '" target="_blank" rel="noopener" aria-label="View photo '
             + str(number) + ' full size">'
             + '<img src="photos/' + filename + '" alt="'
@@ -288,6 +289,7 @@ p{color:#c0d2df}.lead{font-size:19px}
 .memory:hover img{transform:scale(1.035)}
 .memory.featured{grid-column:span 2;grid-row:span 2;aspect-ratio:auto}
 .memory.featured img{object-position:center 25%}
+.memory.centered{grid-column:1 / -1;max-width:260px;width:100%;justify-self:center}
 .dedication{margin:45px 0 0;padding:25px 12px;border-top:1px solid #355469;text-align:center;color:#d4eaf5;font-size:15px;letter-spacing:.01em}
 @media(max-width:580px){.gallery-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.memory{border-radius:11px}.memory.featured{grid-row:span 2}}
 small{display:block;color:#9fb2c2;margin-top:46px}
@@ -298,7 +300,7 @@ small{display:block;color:#9fb2c2;margin-top:46px}
 <h1>The Signal</h1><div class="lead">News. Tech. Fairfax County. Your day ahead, in audio.</div></div>
 </header><p>Good stories, clear context, and the technology that matters. A short independent briefing focused on verified public news, local decisions, cybersecurity and gaming.</p>
 """ + button + gallery + "<section>" + cards + """</section>
-<p class="dedication">My first podcast webpage - made with love for Eliana</p>
+<p class="dedication">My first podcast webpage - made with love for Eliana 🤍</p>
 </main></body></html>"""
     (SITE / "index.html").write_text(html, encoding="utf-8")
 
