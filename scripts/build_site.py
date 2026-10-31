@@ -262,6 +262,7 @@ def index(items):
     target = SITE / "assets"
     target.mkdir(exist_ok=True)
     shutil.copy2(ASSETS / "site.css", target / "site.css")
+    shutil.copy2(ASSETS / "hero-photo.jpg", target / "hero-photo.jpg")
     html = render_page(items, photo_gallery())
     (SITE / "index.html").write_text(html, encoding="utf-8")
 
