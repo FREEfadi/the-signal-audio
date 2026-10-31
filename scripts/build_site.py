@@ -19,6 +19,11 @@ from zoneinfo import ZoneInfo
 
 from PIL import Image, ImageDraw, ImageFont
 
+try:
+    from .site_presentation import ASSETS, render_page
+except ImportError:
+    from site_presentation import ASSETS, render_page
+
 BASE = "https://freefadi.github.io/the-signal-audio"
 ROOT = Path(__file__).resolve().parent.parent
 SITE = ROOT / "site"
@@ -228,6 +233,8 @@ def photo_gallery():
         filename = f"moment-{number:02d}.jpg"
         if not (source / filename).is_file():
             continue
+        with Image.open(source / filename) as photo:
+            width, height = photo.size
         prominent = ' featured' if number == 1 else ''
         centered = ' centered' if number == 8 else ''
         cards.append(
@@ -235,83 +242,27 @@ def photo_gallery():
             + '" target="_blank" rel="noopener" aria-label="View photo '
             + str(number) + ' full size">'
             + '<img src="photos/' + filename + '" alt="'
-            + escape(description) + '" loading="lazy" decoding="async">'
+            + escape(description) + '" width="' + str(width) + '" height="' + str(height)
+            + '" loading="lazy" decoding="async">'
             + '</a>'
         )
     if not cards:
         return ""
     return (
-        '<section class="gallery-section" aria-labelledby="gallery-title">'
-        '<div class="gallery-overline">The moments behind the music</div>'
+        '<section class="gallery-section wrap" id="our-story" aria-labelledby="gallery-title">'
+        '<div class="gallery-heading"><div><p class="eyebrow">The people behind The Signal</p>'
         '<h2 id="gallery-title">A little bit of us</h2>'
-        '<p class="gallery-subtitle">A few favorite moments along the way.</p>'
-        '<div class="gallery-grid">' + ''.join(cards) + '</div></section>'
+        '</div><p>Big adventures. Little moments. A few favorites from our life together.</p></div>'
+        '<div class="gallery-grid">' + ''.join(cards) + '</div><p class="gallery-caption">The best part of the story is sharing it.</p></section>'
     )
 
 
 def index(items):
-    cards = "".join(
-        '<article class="episode"><span class="date">'
-        + escape(meta["date"]) + " · " + escape(meta["edition"].title())
-        + "</span><h2>" + escape(meta["title"])
-        + "</h2><p>" + escape(meta["summary"])
-        + '</p><audio controls preload="none" src="episodes/'
-        + quote(audio.name) + '"></audio>' +
-        ('<details class="sources"><summary>News sources</summary><ul>' +
-         ''.join('<li><a href="' + escape(url, quote=True) +
-                 '" target="_blank" rel="noopener noreferrer">' +
-                 escape(url.split('/')[2]) + '</a></li>'
-                 for url in meta.get("sources", [])) + '</ul></details>'
-         if meta.get("sources") else '') + '</article>'
-        for meta, audio, _ in items[:8]
-    )
-    button = (
-        '<a class="button" href="feed.xml">Open podcast RSS feed</a>'
-        if items else '<span class="pending">Our first episode is coming soon.</span>'
-    )
-    gallery = photo_gallery()
-    html = """<!doctype html><html lang="en"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>The Signal — Morning Audio Briefing</title>
-<meta name="description" content="News, technology, and Fairfax County: a short public-news audio briefing.">
-<style>
-:root{color-scheme:dark}*{box-sizing:border-box}
-body{margin:0;background:#102139;color:#e8f4fb;font:16px/1.6 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-main{max-width:800px;margin:auto;padding:50px 24px 75px}
-.hero{display:flex;gap:28px;align-items:center;padding-bottom:44px;border-bottom:1px solid #365164}
-.hero img{width:180px;height:180px;border-radius:20px;box-shadow:0 10px 35px #071625}
-.kicker{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#9ed8ed;font-weight:700}
-h1{font-size:clamp(40px,7vw,60px);letter-spacing:-.05em;line-height:1.07;margin:10px 0}
-p{color:#c0d2df}.lead{font-size:19px}
-.button{display:inline-block;background:#9ed8ed;color:#11263e;text-decoration:none;border-radius:9px;padding:12px 19px;font-weight:800}
-.pending{border:1px solid #6d8c9d;border-radius:9px;padding:12px 19px;display:inline-block}
-.episode{border-bottom:1px solid #355469;padding:24px 0}
-.episode h2{margin:6px 0;font-size:22px}.date{color:#9ed8ed;font-size:13px}
-.episode audio{width:100%}
-.sources{margin-top:13px;color:#b8cbd6;font-size:13px}.sources summary{cursor:pointer;color:#9ed8ed}.sources ul{margin:8px 0 0;padding-left:17px}.sources a{color:#9ed8ed;word-break:break-all}
-.gallery-section{margin:42px 0 32px;padding:35px 0 37px;border-top:1px solid #355469;border-bottom:1px solid #355469}
-.gallery-overline{font-size:12px;letter-spacing:.13em;text-transform:uppercase;color:#9ed8ed;font-weight:700}
-.gallery-section h2{font-size:clamp(26px,5vw,36px);letter-spacing:-.025em;margin:5px 0 0}
-.gallery-subtitle{margin:0 0 22px;font-size:15px}
-.gallery-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px}
-.memory{display:block;position:relative;overflow:hidden;aspect-ratio:1/1.1;border-radius:13px;background:#29435b;outline-offset:3px}
-.memory img{display:block;width:100%;height:100%;object-fit:cover;object-position:center 30%;transition:transform .3s ease}
-.memory:hover img{transform:scale(1.035)}
-.memory.featured{grid-column:span 2;grid-row:span 2;aspect-ratio:auto}
-.memory.featured img{object-position:center 25%}
-.memory.centered{grid-column:1 / -1;max-width:260px;width:100%;justify-self:center}
-.dedication{margin:45px 0 0;padding:25px 12px;border-top:1px solid #355469;text-align:center;color:#d4eaf5;font-size:15px;letter-spacing:.01em}
-@media(max-width:580px){.gallery-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.memory{border-radius:11px}.memory.featured{grid-row:span 2}}
-small{display:block;color:#9fb2c2;margin-top:46px}
-@media(max-width:580px){.hero{display:block}.hero img{width:140px;height:140px}main{padding-top:30px}}
-</style></head><body><main><header class="hero">
-<img src="cover.jpg" width="180" height="180" alt="The Signal podcast artwork">
-<div><div class="kicker">The Morning Signal · Audio Edition</div>
-<h1>The Signal</h1><div class="lead">News. Tech. Fairfax County. Your day ahead, in audio.</div></div>
-</header><p>Good stories, clear context, and the technology that matters. A short independent briefing focused on verified public news, local decisions, cybersecurity and gaming.</p>
-""" + button + gallery + "<section>" + cards + """</section>
-<p class="dedication">My first podcast webpage - made with love for Eliana 🤍</p>
-</main></body></html>"""
+    """Render the editorial website without changing publication or RSS rules."""
+    target = SITE / "assets"
+    target.mkdir(exist_ok=True)
+    shutil.copy2(ASSETS / "site.css", target / "site.css")
+    html = render_page(items, photo_gallery())
     (SITE / "index.html").write_text(html, encoding="utf-8")
 
 
