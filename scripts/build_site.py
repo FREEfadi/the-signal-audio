@@ -170,6 +170,48 @@ def feed(items):
     ET.ElementTree(rss).write(SITE / "feed.xml", encoding="utf-8", xml_declaration=True)
 
 
+# Optional, public family gallery. Photos must be deliberately uploaded to
+# photos/ by the site owner. Audio-publishing privacy gates are unchanged.
+PHOTO_DESCRIPTIONS = [
+    "Together, dressed up for a special evening",
+    "Watching an ocean sunset together",
+    "Smiling together by the coast",
+    "A sweet moment together outdoors",
+    "A colorful tropical afternoon",
+    "Together at an outdoor cafe",
+    "A kiss beside a colorful love sculpture",
+    "Sharing a smile on a night out",
+]
+
+
+def photo_gallery():
+    """Show all available photos, without broken links before upload."""
+    source = ROOT / "photos"
+    cards = []
+    for number, description in enumerate(PHOTO_DESCRIPTIONS, 1):
+        filename = f"moment-{number:02d}.jpg"
+        if not (source / filename).is_file():
+            continue
+        prominent = ' featured' if number == 1 else ''
+        cards.append(
+            '<a class="memory' + prominent + '" href="photos/' + filename
+            + '" target="_blank" rel="noopener" aria-label="View photo '
+            + str(number) + ' full size">'
+            + '<img src="photos/' + filename + '" alt="'
+            + escape(description) + '" loading="lazy" decoding="async">'
+            + '</a>'
+        )
+    if not cards:
+        return ""
+    return (
+        '<section class="gallery-section" aria-labelledby="gallery-title">'
+        '<div class="gallery-overline">The moments behind the music</div>'
+        '<h2 id="gallery-title">A little bit of us</h2>'
+        '<p class="gallery-subtitle">A few favorite moments along the way.</p>'
+        '<div class="gallery-grid">' + ''.join(cards) + '</div></section>'
+    )
+
+
 def index(items):
     cards = "".join(
         '<article class="episode"><span class="date">'
@@ -184,6 +226,7 @@ def index(items):
         '<a class="button" href="feed.xml">Open podcast RSS feed</a>'
         if items else '<span class="pending">Our first episode is coming soon.</span>'
     )
+    gallery = photo_gallery()
     html = """<!doctype html><html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>The Signal — Morning Audio Briefing</title>
@@ -202,6 +245,18 @@ p{color:#c0d2df}.lead{font-size:19px}
 .episode{border-bottom:1px solid #355469;padding:24px 0}
 .episode h2{margin:6px 0;font-size:22px}.date{color:#9ed8ed;font-size:13px}
 .episode audio{width:100%}
+.gallery-section{margin:42px 0 32px;padding:35px 0 37px;border-top:1px solid #355469;border-bottom:1px solid #355469}
+.gallery-overline{font-size:12px;letter-spacing:.13em;text-transform:uppercase;color:#9ed8ed;font-weight:700}
+.gallery-section h2{font-size:clamp(26px,5vw,36px);letter-spacing:-.025em;margin:5px 0 0}
+.gallery-subtitle{margin:0 0 22px;font-size:15px}
+.gallery-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px}
+.memory{display:block;position:relative;overflow:hidden;aspect-ratio:1/1.1;border-radius:13px;background:#29435b;outline-offset:3px}
+.memory img{display:block;width:100%;height:100%;object-fit:cover;object-position:center 30%;transition:transform .3s ease}
+.memory:hover img{transform:scale(1.035)}
+.memory.featured{grid-column:span 2;grid-row:span 2;aspect-ratio:auto}
+.memory.featured img{object-position:center 25%}
+.dedication{margin:45px 0 0;padding:25px 12px;border-top:1px solid #355469;text-align:center;color:#d4eaf5;font-size:15px;letter-spacing:.01em}
+@media(max-width:580px){.gallery-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.memory{border-radius:11px}.memory.featured{grid-row:span 2}}
 small{display:block;color:#9fb2c2;margin-top:46px}
 @media(max-width:580px){.hero{display:block}.hero img{width:140px;height:140px}main{padding-top:30px}}
 </style></head><body><main><header class="hero">
@@ -209,8 +264,8 @@ small{display:block;color:#9fb2c2;margin-top:46px}
 <div><div class="kicker">The Morning Signal · Audio Edition</div>
 <h1>The Signal</h1><div class="lead">News. Tech. Fairfax County. Your day ahead, in audio.</div></div>
 </header><p>Good stories, clear context, and the technology that matters. A short independent briefing focused on verified public news, local decisions, cybersecurity and gaming.</p>
-""" + button + "<section>" + cards + """</section>
-<small>Independent podcast. Not affiliated with FCPS. Public news only; no personal calendar, family messages, or confidential work information. Follow the RSS URL in Apple Podcasts once the first episode is available.</small>
+""" + button + gallery + "<section>" + cards + """</section>
+<p class="dedication">My first podcast webpage - made with love for Eliana</p>
 </main></body></html>"""
     (SITE / "index.html").write_text(html, encoding="utf-8")
 
@@ -230,6 +285,18 @@ def main():
         feed(items)
     else:
         (SITE / "feed.xml").unlink(missing_ok=True)
+    # Copy only expressly uploaded public gallery photos; no user data discovery.
+    gallery_source = ROOT / "photos"
+    gallery_target = SITE / "photos"
+    if gallery_target.exists():
+        shutil.rmtree(gallery_target)
+    if gallery_source.is_dir():
+        allowed = sorted(gallery_source.glob("moment-??.jpg"))
+        if allowed:
+            gallery_target.mkdir()
+            for photo in allowed:
+                if photo.name in {f"moment-{n:02d}.jpg" for n in range(1, 9)}:
+                    shutil.copy2(photo, gallery_target / photo.name)
     index(items)
     print(f'Site generated: {len(items)} approved episodes; feed exists: {(SITE / "feed.xml").exists()}')
 
