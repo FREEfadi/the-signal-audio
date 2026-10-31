@@ -20,6 +20,30 @@ class SiteTests(unittest.TestCase):
                 with Image.open(Path(d)/"site"/"cover.jpg") as art:
                     self.assertEqual(art.size, (1600, 1600))
 
+    def test_all_eight_gallery_images_appear_with_dedication(self):
+        from zipfile import ZipFile
+        from PIL import Image
+        from io import BytesIO
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            site = root / "site"
+            site.mkdir()
+            with ZipFile(root / "family-gallery.zip", "w") as bundle:
+                for number in range(1, 9):
+                    photo = BytesIO()
+                    Image.new("RGB", (32, 32), (number * 10, 20, 40)).save(photo, "JPEG")
+                    bundle.writestr(f"photos/moment-{number:02d}.jpg", photo.getvalue())
+            with patch.object(build_site, "ROOT", root), patch.object(build_site, "SITE", site):
+                build_site.prepare_gallery()
+                build_site.index([])
+            homepage = (site / "index.html").read_text(encoding="utf-8")
+            self.assertIn("My first podcast webpage - made with love for Eliana", homepage)
+            self.assertNotIn("Independent podcast. Not affiliated with FCPS.", homepage)
+            self.assertEqual(homepage.count('class="memory'), 8)
+            for n in range(1, 9):
+                self.assertTrue((site / "photos" / f"moment-{n:02d}.jpg").exists())
+
     def test_approval_gate(self):
         with tempfile.TemporaryDirectory() as d:
             folder = Path(d)
