@@ -180,7 +180,8 @@ def feed(items):
 
 
 # Optional, public family gallery. Owner-provided family-gallery.zip is the
-# single, intentionally uploaded source; audio privacy gates stay unchanged.
+# intentionally uploaded source. The owner-approved eighth-photo replacement
+# is assets/gallery-feature.jpg; audio privacy gates stay unchanged.
 PHOTO_DESCRIPTIONS = [
     "Together, dressed up for a special evening",
     "Watching an ocean sunset together",
@@ -189,7 +190,7 @@ PHOTO_DESCRIPTIONS = [
     "A colorful tropical afternoon",
     "Together at an outdoor cafe",
     "A kiss beside a colorful love sculpture",
-    "Sharing a smile on a night out",
+    "Together, dressed up and sharing a happy moment",
 ]
 
 
@@ -221,6 +222,10 @@ def prepare_gallery():
             photo = bundle.read(info)
             if len(photo) != info.file_size or not photo.startswith(b"\xff\xd8\xff"):
                 raise ValueError("Invalid JPEG inside gallery archive: " + name)
+            if name == "photos/moment-08.jpg":
+                photo = (ASSETS / "gallery-feature.jpg").read_bytes()
+                if len(photo) > 2_000_000 or not photo.startswith(b"\xff\xd8\xff"):
+                    raise ValueError("Invalid approved gallery replacement.")
             (destination / Path(name).name).write_bytes(photo)
     print("Published eight approved gallery photographs.")
 
@@ -262,7 +267,6 @@ def index(items):
     target = SITE / "assets"
     target.mkdir(exist_ok=True)
     shutil.copy2(ASSETS / "site.css", target / "site.css")
-    shutil.copy2(ASSETS / "hero-photo.jpg", target / "hero-photo.jpg")
     html = render_page(items, photo_gallery())
     (SITE / "index.html").write_text(html, encoding="utf-8")
 
