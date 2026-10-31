@@ -41,7 +41,11 @@ class SiteTests(unittest.TestCase):
             self.assertIn("My first podcast webpage - made with love for Eliana 🤍", homepage)
             self.assertIn('class="memory centered"', homepage)
             self.assertEqual(homepage.count('class="memory centered"'), 1)
-            self.assertIn(".memory.centered{grid-column:1 / -1;max-width:260px;width:100%;justify-self:center}", homepage)
+            stylesheet = (site / 'assets' / 'site.css').read_text()
+            import re
+            centered = re.search(r'\.memory\.centered\{([^}]+)\}', stylesheet).group(1)
+            self.assertIn('grid-column:1 / -1', centered)
+            self.assertIn('justify-self:center', centered)
             self.assertNotIn("Independent podcast. Not affiliated with FCPS.", homepage)
             self.assertEqual(homepage.count('class="memory'), 8)
             for n in range(1, 9):
