@@ -11,5 +11,7 @@
 @media(max-width:380px){.masthead nav{width:100%;justify-content:space-between;gap:12px}.hero-actions{gap:12px}.hero h1{font-size:39px}.hero-description{font-size:17px}.cover-feature{max-width:265px}.brand{font-size:18px}.dedication{font-size:20px}.site-footer p{font-size:10px}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{transition:none!important;animation:none!important}.memory:hover img,.button-light:hover{transform:none}}
 
-/* Preserve the uploaded photograph's complete portrait composition. */
-.cover-feature--portrait .cover-frame img{aspect-ratio:3/4}
+/* The centered eighth gallery photo keeps the owner-requested double frame. */
+.memory.centered{aspect-ratio:auto;overflow:visible;border-radius:0;padding:14px;background:#1c3043;border:1px solid #3a5061;box-shadow:22px 24px 0 -1px var(--navy),22px 24px 0 0 #3a5061;margin-bottom:24px}
+.memory.centered img{position:static;width:100%;height:auto;aspect-ratio:3/4;object-fit:contain;transform:none}
+@media(max-width:1024px){.memory.centered{padding:10px;box-shadow:14px 16px 0 -1px var(--navy),14px 16px 0 0 #3a5061;margin-bottom:16px}}

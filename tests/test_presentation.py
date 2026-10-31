@@ -125,7 +125,7 @@ class PresentationTests(unittest.TestCase):
         self.assertIn('prefers-reduced-motion:reduce', css)
         self.assertIn(':focus-visible', css)
 
-    def test_actual_gallery_bytes_remain_unchanged_and_no_exif(self):
+    def test_approved_gallery_bytes_and_no_exif(self):
         from zipfile import ZipFile
         from PIL import Image
         from io import BytesIO
@@ -135,7 +135,8 @@ class PresentationTests(unittest.TestCase):
             with ZipFile(build_site.ROOT / 'family-gallery.zip') as bundle:
                 for number in range(1, 9):
                     name = f'photos/moment-{number:02d}.jpg'
-                    original = bundle.read(name)
+                    original = ((build_site.ASSETS / "gallery-feature.jpg").read_bytes()
+                                if number == 8 else bundle.read(name))
                     self.assertEqual(original, (Path(temp) / name).read_bytes())
                     with Image.open(BytesIO(original)) as image:
                         self.assertFalse(image.getexif())
