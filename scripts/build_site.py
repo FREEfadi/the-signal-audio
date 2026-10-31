@@ -171,8 +171,8 @@ def feed(items):
     ET.ElementTree(rss).write(SITE / "feed.xml", encoding="utf-8", xml_declaration=True)
 
 
-# Optional, public family gallery. Photos must be deliberately uploaded to
-# photos/ by the site owner. Audio-publishing privacy gates are unchanged.
+# Optional, public family gallery. Owner-provided family-gallery.zip is the
+# single, intentionally uploaded source; audio privacy gates stay unchanged.
 PHOTO_DESCRIPTIONS = [
     "Together, dressed up for a special evening",
     "Watching an ocean sunset together",
@@ -211,7 +211,7 @@ def prepare_gallery():
             if info.file_size > 2_000_000:
                 raise ValueError("Gallery image exceeds 2 MB: " + name)
             photo = bundle.read(info)
-            if len(photo) != info.file_size or not photo.startswith(b"\\xff\\xd8\\xff"):
+            if len(photo) != info.file_size or not photo.startswith(b"\xff\xd8\xff"):
                 raise ValueError("Invalid JPEG inside gallery archive: " + name)
             (destination / Path(name).name).write_bytes(photo)
     print("Published eight approved gallery photographs.")
