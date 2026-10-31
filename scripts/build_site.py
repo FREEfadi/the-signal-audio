@@ -157,7 +157,10 @@ def feed(items):
     for metadata, audio, date in items:
         node = ET.SubElement(channel, "item")
         field(node, "title", metadata["title"])
-        field(node, "description", metadata["summary"])
+        # Provide transparent source references in podcast show notes.
+        # The RSS renderer XML-escapes content automatically.
+        show_notes = metadata["summary"] + "\n\nSources:\n" + "\n".join(metadata.get("sources", []))
+        field(node, "description", show_notes)
         field(node, f"{{{ITUNES}}}explicit", "false")
         field(node, "guid", f'the-signal-{metadata["date"]}-{metadata["edition"]}')
         local_hour = 7 if metadata["edition"] == "morning" else 12
@@ -253,7 +256,13 @@ def index(items):
         + "</span><h2>" + escape(meta["title"])
         + "</h2><p>" + escape(meta["summary"])
         + '</p><audio controls preload="none" src="episodes/'
-        + quote(audio.name) + '"></audio></article>'
+        + quote(audio.name) + '"></audio>' +
+        ('<details class="sources"><summary>News sources</summary><ul>' +
+         ''.join('<li><a href="' + escape(url, quote=True) +
+                 '" target="_blank" rel="noopener noreferrer">' +
+                 escape(url.split('/')[2]) + '</a></li>'
+                 for url in meta.get("sources", [])) + '</ul></details>'
+         if meta.get("sources") else '') + '</article>'
         for meta, audio, _ in items[:8]
     )
     button = (
@@ -279,6 +288,7 @@ p{color:#c0d2df}.lead{font-size:19px}
 .episode{border-bottom:1px solid #355469;padding:24px 0}
 .episode h2{margin:6px 0;font-size:22px}.date{color:#9ed8ed;font-size:13px}
 .episode audio{width:100%}
+.sources{margin-top:13px;color:#b8cbd6;font-size:13px}.sources summary{cursor:pointer;color:#9ed8ed}.sources ul{margin:8px 0 0;padding-left:17px}.sources a{color:#9ed8ed;word-break:break-all}
 .gallery-section{margin:42px 0 32px;padding:35px 0 37px;border-top:1px solid #355469;border-bottom:1px solid #355469}
 .gallery-overline{font-size:12px;letter-spacing:.13em;text-transform:uppercase;color:#9ed8ed;font-weight:700}
 .gallery-section h2{font-size:clamp(26px,5vw,36px);letter-spacing:-.025em;margin:5px 0 0}
